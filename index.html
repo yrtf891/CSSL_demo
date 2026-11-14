@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>CSSL Interactive Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a dark microscope-viewer stage; real data panels sit on light "glass slide" cards. Single dark theme by choice. */
+:root {
+  --stage: #0e0c15;        /* viewer black with a violet bias */
+  --stage-2: #17141f;      /* raised panels */
+  --rule: #2a2536;
+  --ink: #ece9f4;
+  --ink-2: #a9a3ba;
+  --hema: #8f7cf7;         /* hematoxylin violet: accent */
+  --eosin: #e8679f;        /* eosin pink: second accent */
+  --amber: #f2a93b;        /* correctly segmented nucleus overlay */
+  --teal: #2fb38a;         /* background class */
+  --rim: #e0663a;          /* rim class */
+  --glass: #ffffff;        /* slide cards that hold the light-themed figures */
+  --f-display: "Bricolage Grotesque", "Inter", system-ui, sans-serif;
+  --f-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { background: var(--stage); color: var(--ink); font: 16px/1.6 var(--f-body); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--stage); }
+a { color: var(--hema); }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.prose { max-width: 68ch; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; }
+h2 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; font-weight: 700; }
+h3 { font-size: 1.15rem; font-weight: 700; }
+p { margin: 0; }
+.eyebrow { font: 600 0.74rem/1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--eosin); }
+.muted { color: var(--ink-2); }
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+/* nav */
+nav.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--stage) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--rule); }
+nav.top .wrap { display: flex; gap: 18px; align-items: center; padding-block: 10px; overflow-x: auto; scrollbar-width: none; }
+nav.top .brand { font: 700 1rem var(--f-display); color: var(--ink); text-decoration: none; white-space: nowrap; }
+nav.top a.l { color: var(--ink-2); text-decoration: none; font-size: 0.88rem; white-space: nowrap; }
+nav.top a.l:hover { color: var(--ink); }
+
+/* hero */
+header.hero { padding-block: 56px 40px; }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 36px; align-items: center; }
+.hero h1 { font-size: clamp(2rem, 4.6vw, 3.25rem); line-height: 1.06; font-weight: 700; margin-top: 14px; }
+.hero h1 em { font-style: normal; color: var(--hema); }
+.hero .lede { margin-top: 18px; color: var(--ink-2); font-size: 1.06rem; }
+.venue { margin-top: 18px; font: 500 0.85rem var(--f-mono); color: var(--ink-2); }
+.btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--rule); color: var(--ink); text-decoration: none; font-weight: 600; font-size: 0.92rem; background: var(--stage-2); }
+.btn.primary { background: var(--hema); border-color: var(--hema); color: #120f1c; }
+.btn:hover { border-color: var(--hema); }
+.hero video { width: 100%; max-width: 100%; aspect-ratio: 16/9; border-radius: 14px; border: 1px solid var(--rule); background: #000; display: block; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 14px; overflow: hidden; margin-top: 40px; }
+.stat { background: var(--stage-2); padding: 18px 20px; display: grid; gap: 4px; align-content: start; }
+.stat .big { font: 600 2rem/1.1 var(--f-mono); font-variant-numeric: tabular-nums; }
+.stat .big small { font-size: 0.95rem; color: var(--ink-2); font-weight: 400; }
+.stat .lab { font-size: 0.88rem; color: var(--ink-2); }
+.stat .delta { font: 600 0.82rem var(--f-mono); color: var(--teal); }
+
+section { padding-block: 64px; border-top: 1px solid var(--rule); }
+.sec-head { display: grid; gap: 10px; margin-bottom: 28px; }
+
+/* pipeline videos */
+.steps { display: grid; gap: 22px; }
+.step { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 24px; align-items: center; }
+.step video { width: 100%; max-width: 100%; aspect-ratio: 16/9; border-radius: 12px; border: 1px solid var(--rule); background: #000; display: block; }
+.step .k { font: 600 0.78rem var(--f-mono); color: var(--hema); letter-spacing: 0.08em; text-transform: uppercase; }
+.step h3 { margin-top: 6px; font-size: 1.35rem; }
+.step p { margin-top: 10px; color: var(--ink-2); }
+.eq { font-family: var(--f-mono); font-size: 0.86rem; color: var(--ink); background: var(--stage-2); border: 1px solid var(--rule); border-radius: 8px; padding: 8px 10px; margin-top: 12px; overflow-x: auto; white-space: nowrap; }
+
+/* labs */
+.lab-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+.panel { background: var(--stage-2); border: 1px solid var(--rule); border-radius: 14px; padding: 18px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.panel canvas, .panel svg { width: 100%; max-width: 100%; display: block; border-radius: 10px; background: #0a0910; }
+.ctrl { display: grid; gap: 6px; }
+.ctrl label { display: flex; justify-content: space-between; font-size: 0.88rem; color: var(--ink-2); }
+.ctrl label b { color: var(--ink); font-family: var(--f-mono); font-weight: 600; }
+input[type=range] { width: 100%; accent-color: var(--hema); }
+.readout { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.readout div { background: #0a0910; border: 1px solid var(--rule); border-radius: 10px; padding: 10px 12px; }
+.readout span { display: block; font-size: 0.8rem; color: var(--ink-2); }
+.readout b { font: 600 1.25rem var(--f-mono); font-variant-numeric: tabular-nums; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.82rem; color: var(--ink-2); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.maps { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.maps figure { margin: 0; display: grid; gap: 6px; }
+.maps figcaption { font-size: 0.78rem; color: var(--ink-2); font-family: var(--f-mono); }
+.check { font: 600 0.92rem var(--f-mono); padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--teal) 16%, transparent); color: var(--teal); border: 1px solid color-mix(in srgb, var(--teal) 40%, transparent); }
+.note { font-size: 0.8rem; color: var(--ink-2); }
+.theorem { border-left: 3px solid var(--eosin); padding: 4px 0 4px 14px; color: var(--ink); }
+.theorem b { color: var(--eosin); }
+
+/* results */
+.res-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+.chart-tip { position: fixed; pointer-events: none; z-index: 30; background: #fff; color: #17151f; font: 500 0.8rem var(--f-body); padding: 6px 9px; border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.35); }
+table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+.tbl { overflow-x: auto; }
+th, td { padding: 7px 6px; text-align: right; border-bottom: 1px solid var(--rule); white-space: nowrap; font-variant-numeric: tabular-nums; }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--ink-2); font-weight: 500; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
+tr.ours td { color: var(--ink); font-weight: 600; background: color-mix(in srgb, var(--hema) 12%, transparent); }
+tr.pub td { color: var(--ink-2); }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 999px; padding: 3px; gap: 3px; }
+.seg button { border: 0; background: transparent; color: var(--ink-2); padding: 6px 14px; border-radius: 999px; font: 600 0.85rem var(--f-body); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--hema); color: #120f1c; }
+
+/* slides: light figures */
+.slide { background: var(--glass); border-radius: 14px; overflow: hidden; border: 1px solid var(--rule); }
+.slide iframe { display: block; width: 100%; border: 0; background: #fff; }
+.figcap { margin-top: 12px; font-size: 0.9rem; color: var(--ink-2); max-width: 75ch; }
+.imgs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+.imgs img { display: block; width: 100%; height: auto; }
+
+footer { border-top: 1px solid var(--rule); padding-block: 36px 56px; color: var(--ink-2); font-size: 0.88rem; }
+footer .wrap { display: grid; gap: 8px; }
+
+@media (max-width: 860px) {
+  .hero-grid, .step, .lab-grid, .res-grid, .imgs { grid-template-columns: minmax(0, 1fr); }
+  .stats { grid-template-columns: minmax(0, 1fr); }
+  header.hero { padding-block: 32px 28px; }
+  section { padding-block: 44px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="top" aria-label="Sections">
+  <div class="wrap">
+    <a class="brand" href="#top">CSSL</a>
+    <a class="l" href="#idea">Method</a>
+    <a class="l" href="#silhouette">Silhouette lab</a>
+    <a class="l" href="#lemma">Hard negatives</a>
+    <a class="l" href="#results">Results</a>
+    <a class="l" href="#embeddings">Embeddings</a>
+    <a class="l" href="#viewer">Predictions</a>
+    <a class="l" href="#ablations">Ablations</a>
+    <a class="l" href="#code">Code</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow">Semi-supervised medical image segmentation</div>
+        <h1>Silhouette-Adaptive Contrastive Learning With <em>Class-Wise Patches</em></h1>
+        <p class="lede">CSSL measures how well its own embeddings separate the classes and uses that number to decide how hard to perturb the features. Strong feature noise is demanded only once the representation can take it.</p>
+        <div class="btns">
+          <a class="btn primary" href="https://anonymous.4open.science/r/CSSL-442C/" target="_blank" rel="noopener">Anonymous code and logs</a>
+          <a class="btn" href="#silhouette">Try the Silhouette lab</a>
+          <a class="btn" href="#viewer">Browse every prediction</a>
+        </div>
+      </div>
+      <video src="media/patches.mp4" autoplay muted loop playsinline preload="metadata" aria-label="Animation: class-wise patches on a MoNuSeg test image"></video>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="lab">MoNuSeg, 50% labels, nucleus F1</span><span class="big">80.87 <small>± 0.17</small></span><span class="delta">+1.77 over Self-Loop · +2.14 over the recipe</span></div>
+      <div class="stat"><span class="lab">CHAOS T2, 25% labels, Dice</span><span class="big">89.01</span><span class="delta">+7.01 over DAFNet</span></div>
+      <div class="stat"><span class="lab">Half the labels vs. all labels (MoNuSeg)</span><span class="big">80.87 <small>vs 77.64</small></span><span class="delta">above a fully supervised model</span></div>
+    </div>
+  </div>
+</header>
+
+<section id="idea">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">The method in five animations</div>
+      <h2>One training step of CSSL, from pseudo-labels to Silhouette-controlled noise</h2>
+      <p class="muted prose">Every animation uses real images and real features of the trained network. Grey parts are the weak-to-strong recipe; CSSL adds the contrastive branch and the Silhouette feedback on top.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <video src="media/recipe.mp4" autoplay muted loop playsinline preload="metadata" aria-label="Animation: the weak-to-strong recipe"></video>
+        <div><div class="k">Step 0 · Recipe</div><h3>Weak-to-strong pseudo-labelling</h3><p>An exponential-moving-average teacher labels a weak view; two CutMix strong views learn from its confident pixels. This recipe is identical in every run, so every gain below is CSSL's.</p>
+        <div class="eq">ŷ = argmax f<sub>ξ</sub>(u<sup>w</sup>), &nbsp; M = 1[max q ≥ 0.95]</div></div>
+      </div>
+      <div class="step">
+        <video src="media/patches.mp4" muted loop playsinline preload="metadata" controls aria-label="Animation: class-wise patches"></video>
+        <div><div class="k">Step 1 · Class-wise patches</div><h3>One patch per class and window</h3><p>Every 64 × 64 window yields a patch for each class with at least 25 pixels. Nucleus rims within two pixels of the background form a class of their own, which is where merged nuclei are decided.</p></div>
+      </div>
+      <div class="step">
+        <video src="media/embedding.mp4" autoplay muted loop playsinline preload="metadata" aria-label="Animation: feature-level masked pooling"></video>
+        <div><div class="k">Step 2 · Feature-level pooling</div><h3>Encode once, pool by class fraction</h3><p>The full, unmasked image is encoded a single time. Each patch embedding pools the encoder cells under its window, weighted by the fraction of each cell its class covers.</p>
+        <div class="eq">z = norm(φ(Σ<sub>c</sub> m̄(c) h<sub>c</sub>(x) / Σ<sub>c</sub> m̄(c)))</div></div>
+      </div>
+      <div class="step">
+        <video src="media/contrastive.mp4" autoplay muted loop playsinline preload="metadata" aria-label="Animation: contrastive loss with hard negatives"></video>
+        <div><div class="k">Step 3 · Contrast</div><h3>Pull classes together, push them apart</h3><p>A supervised contrastive loss with a memory of 4096 past embeddings and up to 256 synthesized hard negatives per anchor separates the classes. The panel tracks the Silhouette ω as the clusters form.</p></div>
+      </div>
+      <div class="step">
+        <video src="media/perturb.mp4" autoplay muted loop playsinline preload="metadata" aria-label="Animation: Silhouette-adaptive consistency"></video>
+        <div><div class="k">Step 4 · Silhouette feedback</div><h3>Perturb only as hard as the embedding allows</h3><p>The running Silhouette sets the noise level λ of a feature-perturbation consistency loss on every encoder level. Mixed classes get mild noise; separated classes get strong noise.</p>
+        <div class="eq">λ = (ω<sub>smoothed</sub> + 1)/2 + 0.05, &nbsp; h̃ = h + √λ σ(h) ξ</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="silhouette">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Interactive · Property 1</div>
+      <h2>Separate the classes and watch the noise grow</h2>
+      <p class="muted prose">Drag the slider to move three classes apart. The page computes the real Silhouette coefficient of these points with the Manhattan distance, maps it to the noise level λ exactly as CSSL does, and perturbs a feature map with noise √λ σ(h) ξ. The signal-to-noise ratio is −10 log<sub>10</sub> λ, so it falls by more than 13 dB from mixed to separated classes.</p>
+    </div>
+    <div class="lab-grid">
+      <div class="panel">
+        <canvas id="sil-canvas" width="640" height="440" aria-label="Embedding clusters"></canvas>
+        <div class="legend"><span><i style="background:var(--hema)"></i>nucleus</span><span><i style="background:var(--rim)"></i>rim</span><span><i style="background:var(--teal)"></i>background</span></div>
+        <div class="ctrl"><label for="sep">Class separation <b id="sep-v">0.50</b></label><input id="sep" type="range" min="0" max="1" step="0.01" value="0.5"></div>
+      </div>
+      <div class="panel">
+        <div class="readout">
+          <div><span>Silhouette ω</span><b id="r-om">0.00</b></div>
+          <div><span>Noise level λ</span><b id="r-lam">0.55</b></div>
+          <div><span>SNR</span><b id="r-snr">2.6 dB</b></div>
+        </div>
+        <div class="maps">
+          <figure><canvas id="map-clean" width="256" height="256" aria-label="Feature map"></canvas><figcaption>feature map h</figcaption></figure>
+          <figure><canvas id="map-noisy" width="256" height="256" aria-label="Perturbed feature map"></canvas><figcaption>h̃ = h + √λ σ(h) ξ</figcaption></figure>
+        </div>
+        <p class="theorem"><b>Property 1.</b> The expected noise power equals λ times the variance of each feature map, at every layer and activation scale. Hence the SNR moves from 13.0 dB (smoothed ω = −1) through 2.6 dB (ω = 0) to −0.2 dB (ω = 1).</p>
+        <p class="note">Illustration with synthetic 2-d points and a synthetic feature map; CSSL computes ω on 256-d patch embeddings and smooths it over iterations.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="lemma">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Interactive · Lemma 1</div>
+      <h2>Mixed negatives are always harder</h2>
+      <p class="muted prose">A synthesized negative mixes the anchor z<sub>i</sub> with a real negative z<sub>n</sub> and projects back to the sphere. It slides along the great circle towards the anchor, so its similarity to the anchor is strictly higher than its parent's for every mixing weight α in (0, 1]. CSSL draws α from U(0, 0.4), the shaded arc.</p>
+    </div>
+    <div class="lab-grid">
+      <div class="panel">
+        <svg id="lem-svg" viewBox="0 0 440 440" role="img" aria-label="Unit circle with anchor, negative and mixed negative"></svg>
+      </div>
+      <div class="panel">
+        <div class="ctrl"><label for="theta">Angle between anchor and negative <b id="theta-v">120°</b></label><input id="theta" type="range" min="5" max="175" step="1" value="120"></div>
+        <div class="ctrl"><label for="alpha">Mixing weight α <b id="alpha-v">0.30</b></label><input id="alpha" type="range" min="0.01" max="1" step="0.01" value="0.3"></div>
+        <div class="readout">
+          <div><span>z<sub>i</sub>ᵀz<sub>n</sub></span><b id="l-c">−0.50</b></div>
+          <div><span>z<sub>i</sub>ᵀz̃</span><b id="l-ct">0.00</b></div>
+          <div><span>Gain</span><b id="l-g">+0.50</b></div>
+        </div>
+        <div class="check" id="l-check">z_iᵀ z̃ &gt; z_iᵀ z_n  ✓</div>
+        <p class="theorem"><b>Lemma 1.</b> For unit vectors z<sub>n</sub> ≠ ±z<sub>i</sub> and α ∈ (0, 1], z̃ = norm(α z<sub>i</sub> + (1 − α) z<sub>n</sub>) satisfies z<sub>i</sub>ᵀz̃ &gt; z<sub>i</sub>ᵀz<sub>n</sub>. The proof is three lines in the paper; here you can try to break it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="results">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Results under the published protocols</div>
+      <h2>Above the strongest baselines and above the recipe it builds on</h2>
+      <p class="muted prose">Dots are individual label splits, the dashed line is the published baseline. Hover a dot for its value. The recipe-only control uses the same code, splits and schedule, so the gap to CSSL is exactly what CSSL adds.</p>
+    </div>
+    <div class="res-grid">
+      <div class="panel">
+        <h3>MoNuSeg · 50% labels · nucleus F1 (%)</h3>
+        <svg id="ch-mono" viewBox="0 0 480 250" role="img" aria-label="MoNuSeg results per split"></svg>
+        <div class="tbl"><table>
+          <thead><tr><th>Method</th><th>Split 0</th><th>Split 1</th><th>Split 2</th><th>Mean</th></tr></thead>
+          <tbody>
+            <tr class="pub"><td>Self-Loop (published)</td><td>–</td><td>–</td><td>–</td><td>79.10</td></tr>
+            <tr><td>Supervised</td><td>76.01</td><td>–</td><td>–</td><td>76.01</td></tr>
+            <tr><td>Recipe only</td><td>77.69</td><td>78.50</td><td>79.99</td><td>78.73 ± 0.95</td></tr>
+            <tr class="ours"><td>CSSL</td><td>80.66</td><td>81.07</td><td>80.88</td><td>80.87 ± 0.17</td></tr>
+            <tr class="pub"><td>Fully supervised, 100% labels</td><td>77.64</td><td>–</td><td>–</td><td>77.64</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h3>CHAOS T2 · 25% labels · Dice (%)</h3>
+        <svg id="ch-chaos" viewBox="0 0 480 250" role="img" aria-label="CHAOS results per split"></svg>
+        <div class="tbl"><table>
+          <thead><tr><th>Method</th><th>Split 0</th><th>Split 1</th><th>Split 2</th><th>Mean</th></tr></thead>
+          <tbody>
+            <tr class="pub"><td>DAFNet (published)</td><td>–</td><td>–</td><td>–</td><td>82.0</td></tr>
+            <tr><td>Supervised</td><td>90.55</td><td>79.07</td><td>87.98</td><td>85.87 ± 4.92</td></tr>
+            <tr><td>Recipe only</td><td>89.96</td><td>85.33</td><td>91.52</td><td>88.94 ± 2.63</td></tr>
+            <tr class="ours"><td>CSSL</td><td>90.47</td><td>85.67</td><td>90.90</td><td>89.01 ± 2.37</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+    <div class="imgs" style="margin-top:20px">
+      <div><div class="slide"><img src="media/fig_qual_monuseg.png" alt="MoNuSeg test windows: largest, median and smallest gain of CSSL over the recipe"></div><p class="figcap">MoNuSeg test windows. Yellow: correct nucleus pixels; red: false positives; violet: missed nuclei. On the image with the largest gain, the supervised model and the recipe mark background as nuclei (F1 33.9 and 41.3); CSSL does not (79.0).</p></div>
+      <div><div class="slide"><img src="media/fig_qual_chaos.png" alt="CHAOS T2 test slices, one per split"></div><p class="figcap">CHAOS T2 slices, one per split. On the hardest split CSSL recovers more of the liver and part of the spleen than the recipe (slice Dice 43.4 vs. 27.1).</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="embeddings">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Interactive · what the encoder learned</div>
+      <h2>Three classes, three clusters</h2>
+      <p class="muted prose">2100 patches from the MoNuSeg test images, embedded by three encoders. Morph between a random encoder, the recipe and CSSL: the Silhouette rises from 0.10 with the recipe to 0.25 with CSSL, and the rims get a cluster of their own next to the nuclei.</p>
+    </div>
+    <div class="slide"><iframe src="interactive/embeddings.html" title="Interactive t-SNE of patch embeddings" loading="lazy" style="height:720px"></iframe></div>
+  </div>
+</section>
+
+<section id="curves">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Interactive · the feedback during training</div>
+      <h2>ω rises, and λ follows, in every run</h2>
+      <p class="muted prose">The batch Silhouette ω of the patch embeddings and the noise level λ it sets, for all six training runs. Pick a run and hover to read values at any iteration.</p>
+    </div>
+    <div class="slide"><iframe src="interactive/silhouette_curves.html" title="Silhouette and noise-level curves" loading="lazy" style="height:460px"></iframe></div>
+  </div>
+</section>
+
+<section id="viewer">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Interactive · every test image</div>
+      <h2>Compare any two models on any test image</h2>
+      <p class="muted prose">All 14 MoNuSeg test images and every CHAOS test subject of the three splits. Choose two of image, ground truth, supervised, recipe and CSSL, drag the divider, and step through each MR volume with the slider.</p>
+    </div>
+    <div class="slide"><iframe src="interactive/prediction_viewer.html" title="Prediction viewer" loading="lazy" style="height:880px"></iframe></div>
+  </div>
+</section>
+
+<section id="ablations">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Ablations</div>
+      <h2>The contrastive branch carries the method</h2>
+      <p class="muted prose">Δ is the full model minus the model without a component, on one split per dataset; positive means the component helps. Removing the contrastive loss costs 2.15 points on MoNuSeg and 7.21 on CHAOS, and the boundary class alone is worth 2.67.</p>
+    </div>
+    <div class="panel">
+      <div class="seg" role="group" aria-label="Dataset"><button type="button" id="ab-m" aria-pressed="true">MoNuSeg</button><button type="button" id="ab-c" aria-pressed="false">CHAOS</button></div>
+      <svg id="ab-svg" viewBox="0 0 720 330" role="img" aria-label="Ablation effects"></svg>
+    </div>
+  </div>
+</section>
+
+<section id="code">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Reproducibility</div>
+      <h2>Every number has a log behind it</h2>
+      <p class="muted prose">The anonymous repository holds the code, the configuration and training log of every run, and scripts that print every number in the tables. Each final model was tested once; no test-time augmentation or post-processing.</p>
+    </div>
+    <div class="btns"><a class="btn primary" href="https://anonymous.4open.science/r/CSSL-442C/" target="_blank" rel="noopener">anonymous.4open.science/r/CSSL-442C</a></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>Anonymous authors.</span>
+    <span>Images: MoNuSeg (Kumar et al., IEEE TMI 2017, 2020) and CHAOS (Kavur et al., Medical Image Analysis 2021).</span>
+  </div>
+</footer>
+
+<div class="chart-tip" id="tip" hidden></div>
+
+<script>
+(function () {
+  "use strict";
+  const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const C = { hema: css("--hema"), rim: css("--rim"), teal: css("--teal"), ink: css("--ink"), ink2: css("--ink-2"), rule: css("--rule"), eosin: css("--eosin"), amber: css("--amber") };
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) document.querySelectorAll("video[autoplay]").forEach(v => { v.removeAttribute("autoplay"); v.pause(); v.controls = true; });
+
+  // deterministic RNG
+  function rng(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  function gauss(r) { let u = 0, v = 0; while (u === 0) u = r(); v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+  // ---------------- Silhouette lab ----------------
+  const N = 60, cls = [0, 1, 2], colors = [C.hema, C.rim, C.teal];
+  const r0 = rng(7), base = [];
+  for (const k of cls) for (let i = 0; i < N; i++) base.push({ k, x: gauss(r0), y: gauss(r0) });
+  const ang = [-Math.PI / 2, Math.PI / 6, 5 * Math.PI / 6];
+  function points(sep) { const R = 4.2 * sep; return base.map(p => ({ k: p.k, x: p.x + R * Math.cos(ang[p.k]), y: p.y + R * Math.sin(ang[p.k]) })); }
+  function silhouette(P) {
+    let tot = 0;
+    for (let i = 0; i < P.length; i++) {
+      const sum = [0, 0, 0], cnt = [0, 0, 0];
+      for (let j = 0; j < P.length; j++) { if (i === j) continue; const d = Math.abs(P[i].x - P[j].x) + Math.abs(P[i].y - P[j].y); sum[P[j].k] += d; cnt[P[j].k]++; }
+      const k = P[i].k, a = sum[k] / cnt[k];
+      let b = Infinity; for (const m of cls) if (m !== k) b = Math.min(b, sum[m] / cnt[m]);
+      tot += (b - a) / Math.max(a, b);
+    }
+    return tot / P.length;
+  }
+  const sc = document.getElementById("sil-canvas"), sx = sc.getContext("2d");
+  function drawPoints(P) {
+    const W = sc.width, H = sc.height; sx.clearRect(0, 0, W, H);
+    sx.strokeStyle = C.rule; sx.lineWidth = 1;
+    for (let g = 1; g < 8; g++) { sx.beginPath(); sx.moveTo(g * W / 8, 0); sx.lineTo(g * W / 8, H); sx.stroke(); sx.beginPath(); sx.moveTo(0, g * H / 8); sx.lineTo(W, g * H / 8); sx.stroke(); }
+    const s = Math.min(W, H) / 13;
+    for (const p of P) { sx.beginPath(); sx.arc(W / 2 + p.x * s, H / 2 + p.y * s, 5, 0, 2 * Math.PI); sx.fillStyle = colors[p.k]; sx.globalAlpha = 0.85; sx.fill(); sx.globalAlpha = 1; sx.strokeStyle = "#0a0910"; sx.lineWidth = 1.5; sx.stroke(); }
+  }
+  // synthetic feature map: smooth blobs, fixed noise
+  const M = 128, r1 = rng(11), field = new Float32Array(M * M), xi = new Float32Array(M * M);
+  const blobs = Array.from({ length: 18 }, () => ({ x: r1() * M, y: r1() * M, s: 5 + r1() * 9, a: 0.6 + r1() * 0.8 }));
+  for (let y = 0; y < M; y++) for (let x = 0; x < M; x++) { let v = 0.15 * Math.sin(x / 9) * Math.cos(y / 11); for (const b of blobs) v += b.a * Math.exp(-((x - b.x) ** 2 + (y - b.y) ** 2) / (2 * b.s * b.s)); field[y * M + x] = v; xi[y * M + x] = gauss(r1); }
+  let mean = 0; for (const v of field) mean += v; mean /= field.length;
+  let sd = 0; for (const v of field) sd += (v - mean) ** 2; sd = Math.sqrt(sd / field.length);
+  function lut(t) { // viridis-like ramp built from the page palette (dark violet -> violet -> pink -> amber)
+    const stops = [[14, 12, 21], [70, 48, 150], [143, 124, 247], [232, 103, 159], [242, 169, 59]];
+    t = Math.max(0, Math.min(1, t)); const f = t * (stops.length - 1), i = Math.min(stops.length - 2, Math.floor(f)), u = f - i;
+    return stops[i].map((c, j) => Math.round(c + (stops[i + 1][j] - c) * u));
+  }
+  function drawMap(cv, lam) {
+    const ctx = cv.getContext("2d"), img = ctx.createImageData(M, M), k = Math.sqrt(lam) * sd;
+    for (let i = 0; i < M * M; i++) { const v = field[i] + k * xi[i]; const t = (v - mean) / (4 * sd) + 0.35; const [r, g, b] = lut(t); img.data[4 * i] = r; img.data[4 * i + 1] = g; img.data[4 * i + 2] = b; img.data[4 * i + 3] = 255; }
+    const off = document.createElement("canvas"); off.width = M; off.height = M; off.getContext("2d").putImageData(img, 0, 0);
+    ctx.imageSmoothingEnabled = false; ctx.drawImage(off, 0, 0, cv.width, cv.height);
+  }
+  const sep = document.getElementById("sep");
+  function updSil() {
+    const s = +sep.value, P = points(s), om = silhouette(P), lam = (om + 1) / 2 + 0.05, snr = -10 * Math.log10(lam);
+    document.getElementById("sep-v").textContent = s.toFixed(2);
+    document.getElementById("r-om").textContent = om.toFixed(2);
+    document.getElementById("r-lam").textContent = lam.toFixed(2);
+    document.getElementById("r-snr").textContent = snr.toFixed(1) + " dB";
+    drawPoints(P); drawMap(document.getElementById("map-noisy"), lam);
+  }
+  drawMap(document.getElementById("map-clean"), 0);
+  sep.addEventListener("input", updSil); updSil();
+
+  // ---------------- Lemma lab ----------------
+  const NS = "http://www.w3.org/2000/svg", svg = document.getElementById("lem-svg");
+  const el = (t, a, p) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); (p || svg).appendChild(e); return e; };
+  const cx = 220, cy = 220, R = 160;
+  const P2 = (a) => [cx + R * Math.cos(a), cy - R * Math.sin(a)];
+  function arcPath(a0, a1, r) { const [x0, y0] = [cx + r * Math.cos(a0), cy - r * Math.sin(a0)], [x1, y1] = [cx + r * Math.cos(a1), cy - r * Math.sin(a1)]; const large = Math.abs(a1 - a0) > Math.PI ? 1 : 0, sweep = a1 > a0 ? 0 : 1; return `M${x0},${y0} A${r},${r} 0 ${large} ${sweep} ${x1},${y1}`; }
+  function mixAngle(th, a) { const x = a + (1 - a) * Math.cos(th), y = (1 - a) * Math.sin(th); return Math.atan2(y, x); }
+  function updLem() {
+    const th = (+document.getElementById("theta").value) * Math.PI / 180, a = +document.getElementById("alpha").value;
+    document.getElementById("theta-v").textContent = Math.round(th * 180 / Math.PI) + "°";
+    document.getElementById("alpha-v").textContent = a.toFixed(2);
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    el("circle", { cx, cy, r: R, fill: "none", stroke: C.rule, "stroke-width": 2 });
+    el("line", { x1: cx - R - 14, y1: cy, x2: cx + R + 14, y2: cy, stroke: C.rule, "stroke-width": 1 });
+    el("line", { x1: cx, y1: cy - R - 14, x2: cx, y2: cy + R + 14, stroke: C.rule, "stroke-width": 1 });
+    // shaded arc of alpha in (0, 0.4]
+    el("path", { d: arcPath(th, mixAngle(th, 0.4), R), fill: "none", stroke: C.eosin, "stroke-width": 10, "stroke-linecap": "round", opacity: 0.35 });
+    // geodesic from negative to anchor
+    el("path", { d: arcPath(th, 0, R), fill: "none", stroke: C.ink2, "stroke-width": 1.5, "stroke-dasharray": "4 5" });
+    const t = mixAngle(th, a);
+    const vec = (ang, col, lab, dx, dy) => { const [x, y] = P2(ang); el("line", { x1: cx, y1: cy, x2: x, y2: y, stroke: col, "stroke-width": 3, "stroke-linecap": "round" }); el("circle", { cx: x, cy: y, r: 7, fill: col, stroke: "#0a0910", "stroke-width": 2 }); const tx = el("text", { x: x + dx, y: y + dy, fill: col, "font-family": "JetBrains Mono, monospace", "font-size": 15, "font-weight": 600 }); tx.textContent = lab; };
+    vec(0, C.teal, "z_i", -14, -16);
+    vec(th, C.rim, "z_n", Math.cos(th) * 14 - 10, -Math.sin(th) * 14 - 8);
+    vec(t, C.hema, "z̃", Math.cos(t) * 16 - 4, -Math.sin(t) * 16 + 4);
+    const c = Math.cos(th), ct = Math.cos(t);
+    document.getElementById("l-c").textContent = c.toFixed(2).replace("-", "−");
+    document.getElementById("l-ct").textContent = ct.toFixed(2).replace("-", "−");
+    document.getElementById("l-g").textContent = "+" + (ct - c).toFixed(2);
+    document.getElementById("l-check").textContent = `z_iᵀz̃ = ${ct.toFixed(3)} > ${c.toFixed(3)} = z_iᵀz_n  ✓`;
+  }
+  document.getElementById("theta").addEventListener("input", updLem);
+  document.getElementById("alpha").addEventListener("input", updLem);
+  updLem();
+
+  // ---------------- result strip charts ----------------
+  const tip = document.getElementById("tip");
+  function showTip(e, txt) { tip.textContent = txt; tip.hidden = false; tip.style.left = (e.clientX + 12) + "px"; tip.style.top = (e.clientY + 12) + "px"; }
+  function hideTip() { tip.hidden = true; }
+  function strip(id, rows, base, baseLab, lo, hi) {
+    const s = document.getElementById(id), W = 480, H = 250, L = 112, Rr = 18, T = 16, B = 34;
+    const x = (v) => L + (v - lo) / (hi - lo) * (W - L - Rr);
+    const add = (t, a, txt) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; s.appendChild(e); return e; };
+    for (let v = lo; v <= hi + 1e-9; v += (hi - lo) / 4) { add("line", { x1: x(v), y1: T, x2: x(v), y2: H - B, stroke: C.rule }); add("text", { x: x(v), y: H - B + 18, fill: C.ink2, "font-size": 12, "text-anchor": "middle", "font-family": "JetBrains Mono, monospace" }, v.toFixed(0)); }
+    const rowH = (H - T - B) / rows.length;
+    add("line", { x1: x(base), y1: T, x2: x(base), y2: H - B, stroke: C.eosin, "stroke-width": 2, "stroke-dasharray": "5 4" });
+    add("text", { x: x(base) + 5, y: T + 10, fill: C.eosin, "font-size": 11.5, "font-family": "Inter, sans-serif" }, baseLab);
+    rows.forEach((r, i) => {
+      const y = T + rowH * (i + 0.5);
+      add("text", { x: L - 10, y: y + 4, fill: r.ours ? C.ink : C.ink2, "font-size": 13, "text-anchor": "end", "font-weight": r.ours ? 700 : 400, "font-family": "Inter, sans-serif" }, r.name);
+      const m = r.vals.reduce((a, b) => a + b, 0) / r.vals.length;
+      add("line", { x1: x(m), y1: y - 11, x2: x(m), y2: y + 11, stroke: r.color, "stroke-width": 3, "stroke-linecap": "round" });
+      r.vals.forEach((v, j) => {
+        const hit = add("circle", { cx: x(v), cy: y + (j - (r.vals.length - 1) / 2) * 5, r: 6.5, fill: r.color, stroke: "#0a0910", "stroke-width": 2, tabindex: 0 });
+        const t = `${r.name}, split ${j}: ${v.toFixed(2)}`;
+        hit.addEventListener("mousemove", (e) => showTip(e, t)); hit.addEventListener("mouseleave", hideTip);
+        hit.addEventListener("focus", () => { const b = hit.getBoundingClientRect(); showTip({ clientX: b.right, clientY: b.bottom }, t); }); hit.addEventListener("blur", hideTip);
+      });
+    });
+  }
+  strip("ch-mono", [
+    { name: "Supervised", vals: [76.01], color: C.ink2 },
+    { name: "Recipe only", vals: [77.69, 78.50, 79.99], color: C.amber },
+    { name: "CSSL", vals: [80.66, 81.07, 80.88], color: C.hema, ours: true }], 79.10, "Self-Loop 79.10", 75, 83);
+  strip("ch-chaos", [
+    { name: "Supervised", vals: [90.55, 79.07, 87.98], color: C.ink2 },
+    { name: "Recipe only", vals: [89.96, 85.33, 91.52], color: C.amber },
+    { name: "CSSL", vals: [90.47, 85.67, 90.90], color: C.hema, ours: true }], 82.0, "DAFNet 82.0", 76, 96);
+
+  // ---------------- ablation bars ----------------
+  const AB = {
+    m: [["w/o boundary class", 2.67], ["w/o contrastive loss", 2.15], ["w/o feature-level pooling", 1.55], ["w/o synthesized hard negatives", 0.59], ["w/o consistency loss", 0.24], ["w/o Silhouette feedback", 0.12], ["w/o memory bank", -0.48], ["recipe only (all of CSSL removed)", 2.97]],
+    c: [["w/o contrastive loss", 7.21], ["w/o Silhouette feedback", 0.68], ["w/o synthesized hard negatives", 0.51], ["w/o consistency loss", -0.83], ["recipe only (all of CSSL removed)", 0.34]]
+  };
+  const ab = document.getElementById("ab-svg");
+  function drawAb(key) {
+    while (ab.firstChild) ab.removeChild(ab.firstChild);
+    const rows = AB[key], W = 720, L = 250, Rr = 60, T = 10, rowH = 38, H = T + rows.length * rowH + 30;
+    ab.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    const lo = -1, hi = key === "m" ? 3.2 : 7.6, x = (v) => L + (v - lo) / (hi - lo) * (W - L - Rr);
+    const add = (t, a, txt) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; ab.appendChild(e); return e; };
+    add("line", { x1: x(0), y1: T, x2: x(0), y2: T + rows.length * rowH, stroke: C.ink2 });
+    rows.forEach(([n, d], i) => {
+      const y = T + i * rowH, x0 = x(Math.min(0, d)), w = Math.abs(x(d) - x(0));
+      add("text", { x: L - 12, y: y + rowH / 2 + 4, fill: C.ink, "font-size": 13.5, "text-anchor": "end", "font-family": "Inter, sans-serif" }, n);
+      const r = add("rect", { x: x0, y: y + 8, width: Math.max(w, 2), height: rowH - 16, rx: 4, fill: d >= 0 ? C.hema : C.eosin });
+      add("text", { x: d >= 0 ? x(d) + 8 : x(d) - 8, y: y + rowH / 2 + 4, fill: C.ink2, "font-size": 12.5, "text-anchor": d >= 0 ? "start" : "end", "font-family": "JetBrains Mono, monospace" }, (d >= 0 ? "+" : "−") + Math.abs(d).toFixed(2));
+      r.addEventListener("mousemove", (e) => showTip(e, `${n}: Δ = ${(d >= 0 ? "+" : "−") + Math.abs(d).toFixed(2)}`)); r.addEventListener("mouseleave", hideTip);
+    });
+    add("text", { x: x(0), y: T + rows.length * rowH + 22, fill: C.ink2, "font-size": 12, "text-anchor": "middle", "font-family": "Inter, sans-serif" }, "Δ = full model − ablated model (points)");
+  }
+  const bm = document.getElementById("ab-m"), bc = document.getElementById("ab-c");
+  bm.addEventListener("click", () => { bm.setAttribute("aria-pressed", "true"); bc.setAttribute("aria-pressed", "false"); drawAb("m"); });
+  bc.addEventListener("click", () => { bc.setAttribute("aria-pressed", "true"); bm.setAttribute("aria-pressed", "false"); drawAb("c"); });
+  drawAb("m");
+})();
+</script>
+
+</body>
+</html>

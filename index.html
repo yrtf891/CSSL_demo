@@ -56,6 +56,15 @@ header.hero { padding-block: 56px 40px; }
 .hero-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 36px; align-items: center; }
 .hero h1 { font-size: clamp(2rem, 4.6vw, 3.25rem); line-height: 1.06; font-weight: 700; margin-top: 14px; }
 .hero h1 em { font-style: normal; color: var(--hema); }
+.hero h1 .sub { display: block; margin-top: 10px; font-size: 0.5em; line-height: 1.25; font-weight: 500; color: var(--ink-2); }
+.abstract { font-size: 1.04rem; color: var(--ink); max-width: 75ch; }
+.novel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 28px; }
+.novel .panel h3 { font-size: 1.12rem; }
+.novel .panel p { color: var(--ink-2); font-size: 0.95rem; }
+.novel .ev { display: flex; gap: 10px; flex-wrap: wrap; }
+.novel .ev span { font: 600 0.8rem var(--f-mono); color: var(--teal); background: color-mix(in srgb, var(--teal) 12%, transparent); border: 1px solid color-mix(in srgb, var(--teal) 35%, transparent); border-radius: 999px; padding: 4px 10px; }
+.novel .tag { font: 600 0.72rem var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--hema); }
+@media (max-width: 860px) { .novel { grid-template-columns: minmax(0, 1fr); } }
 .hero .lede { margin-top: 18px; color: var(--ink-2); font-size: 1.06rem; }
 .venue { margin-top: 18px; font: 500 0.85rem var(--f-mono); color: var(--ink-2); }
 .btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
@@ -141,6 +150,7 @@ footer .wrap { display: grid; gap: 8px; }
 <nav class="top" aria-label="Sections">
   <div class="wrap">
     <a class="brand" href="#top">CSSL</a>
+    <a class="l" href="#abstract">Abstract</a>
     <a class="l" href="#idea">Method</a>
     <a class="l" href="#silhouette">Silhouette lab</a>
     <a class="l" href="#lemma">Hard negatives</a>
@@ -156,8 +166,8 @@ footer .wrap { display: grid; gap: 8px; }
   <div class="wrap">
     <div class="hero-grid">
       <div>
-        <div class="eyebrow">Semi-supervised medical image segmentation</div>
-        <h1>Silhouette-Adaptive Contrastive Learning With <em>Class-Wise Patches</em></h1>
+        <div class="eyebrow">Interactive demo</div>
+        <h1>Silhouette-Adaptive Contrastive Learning With <em>Class-Wise Patches</em> <span class="sub">for Semi-Supervised Medical Image Segmentation</span></h1>
         <p class="lede">CSSL measures how well its own embeddings separate the classes and uses that number to decide how hard to perturb the features. Strong feature noise is demanded only once the representation can take it.</p>
         <div class="btns">
           <a class="btn primary" href="https://anonymous.4open.science/r/CSSL-442C/" target="_blank" rel="noopener">Anonymous code and logs</a>
@@ -174,6 +184,22 @@ footer .wrap { display: grid; gap: 8px; }
     </div>
   </div>
 </header>
+
+<section id="abstract">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Abstract</div>
+      <h2>Contrast class-wise patches, and let their separation set the noise</h2>
+    </div>
+    <p class="abstract">Semi-supervised segmentation reduces the expert annotation that medical images require. We present a contrastive method in which every window of an image contributes one embedding per class, pooled from the encoder features of the unmasked image, and in which the rims of touching nuclei form a contrastive class of their own. A supervised contrastive loss with synthesized hard negatives separates these embeddings, and their Silhouette coefficient sets the noise power of a feature-perturbation consistency loss. The network is thus asked to tolerate strong feature noise only once its representation separates the classes, closing a feedback loop that fixed-strength perturbation methods lack. Added to a strong weak-to-strong pseudo-labelling recipe and evaluated under published protocols, the method reaches a nucleus F1 score of 80.87 on MoNuSeg with half of the labels, above Self-Loop, above the recipe on every label split, and above a fully supervised model. On T2-weighted abdominal magnetic resonance images from CHAOS with a quarter of the labels, it reaches a Dice score of 89.01, seven points above DAFNet.</p>
+    <div class="novel">
+      <div class="panel"><span class="tag">New unit of contrast</span><h3>Class-wise patches with feature-level pooling</h3><p>Each embedding pools the features of the unmasked image over one class in one window. Unlike pixel- or region-level contrast, it carries local context without an extra encoder pass, and the encoder only ever sees real images.</p><div class="ev"><span>+1.55 F1 in ablation</span></div></div>
+      <div class="panel"><span class="tag">New contrastive class</span><h3>A boundary class for touching nuclei</h3><p>Nucleus pixels within two pixels of the background form a class of their own in embedding space, where merged neighbours are decided. Segmentation targets and the network stay unchanged.</p><div class="ev"><span>+2.67 F1 in ablation</span><span>largest single gain</span></div></div>
+      <div class="panel"><span class="tag">New coupling</span><h3>Silhouette-adaptive consistency</h3><p>The Silhouette of the method's own embeddings sets the noise power of feature-perturbation consistency, so the feature signal-to-noise ratio moves over more than 13 dB as the classes separate (Property 1).</p><div class="ev"><span>beats fixed noise on both datasets</span></div></div>
+      <div class="panel"><span class="tag">New result</span><h3>Mixed negatives are provably harder</h3><p>For any mixing weight in (0, 1], a synthesized negative is strictly more similar to its anchor than the real negative it comes from (Lemma 1), so it sharpens the contrast exactly where classes are confused.</p><div class="ev"><span>+0.59 / +0.51 in ablation</span></div></div>
+    </div>
+  </div>
+</section>
 
 <section id="idea">
   <div class="wrap">
